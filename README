@@ -142,6 +142,27 @@ importing it,
 Each of the three programs has some extra functionalities.
 Use the -h option to see all the options you could pass in.
 
+Merging split headings
+----------------------
+
+Sometimes, a single heading might be split into multiple lines in the
+PDF, which pdftocgen might recognize as separate entries. You can merge
+them back together using the -m or --merge flag by specifying a vertical
+distance threshold.
+
+    $ pdftocgen -m 20.0 doc.pdf < rcp.toml
+
+If the vertical gap between two consecutive entries (on the same page
+and level) is smaller than the threshold (e.g. 20.0), they will be
+merged into a single entry.
+
+Alternatively, you can use the -a or --auto-merge flag to automatically
+determine the threshold based on the font size specified in the recipe
+(approx. 3x the font size).
+
+    $ pdftocgen -a doc.pdf < rcp.toml
+
+
 Development
 -----------
 

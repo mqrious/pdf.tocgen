@@ -280,6 +280,23 @@ $ pdftocgen -v doc.pdf < rcp.toml | pdftocio doc.pdf
 
 Note that the default output of `pdftocio` here is `doc_out.pdf`.
 
+Merging split headings
+----------------------
+
+Sometimes, a single heading might be split into multiple lines in the PDF, which `pdftocgen` might recognize as separate entries. You can merge them back together using the `-m` or `--merge` flag by specifying a vertical distance threshold.
+
+```console
+$ pdftocgen -m 20.0 doc.pdf < rcp.toml
+```
+
+If the vertical gap between two consecutive entries (on the same page and level) is smaller than the threshold (e.g. 20.0), they will be merged into a single entry.
+
+Alternatively, you can use the `-a` or `--auto-merge` flag to automatically determine the threshold based on the font size specified in the recipe (approx. 3x the font size).
+
+```console
+$ pdftocgen -a doc.pdf < rcp.toml
+```
+
 ### `pdfxmeta`
 
 To search for `Anaphoric` in the entire PDF:

@@ -9,7 +9,7 @@ import io
 from getopt import GetoptError
 from typing import TextIO
 from fitzutils import open_pdf, dump_toc, pprint_toc, get_file_encoding
-from .tocgen import gen_toc
+from .tocgen import gen_toc, merge_toc, auto_merge_toc
 
 usage_s = """
 usage: pdftocgen [options] doc.pdf < recipe.toml
@@ -70,6 +70,11 @@ options
                             output
   -o, --out=file            path to the output file. if this flag is
                             not specified, the default is stdout
+  -m, --merge=threshold     merge consecutive headings if the vertical
+                            distance between them is smaller than the
+                            threshold (0.0 means no merging)
+  -a, --auto-merge          automatically merge headings based on font
+                            size (threshold ≈ 3.0 × font size)
   -g, --debug               enable debug mode
   -V, --version             show version number
 
@@ -82,8 +87,9 @@ def main():
     try:
         opts, args = getopt.gnu_getopt(
             sys.argv[1:],
-            "hr:Hvo:gV",
-            ["help", "recipe=", "human-readable", "vpos", "out=", "debug", "version"]
+            "hr:Hvo:m:agV",
+            ["help", "recipe=", "human-readable", "vpos",
+             "out=", "merge=", "auto-merge", "debug", "version"]
         )
     except GetoptError as e:
         print(e, file=sys.stderr)
@@ -94,6 +100,8 @@ def main():
     readable: bool = False
     vpos: bool = False
     out: TextIO = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='ignore')
+    merge_threshold: float = 0.0
+    auto_merge: bool = False
     debug: bool = False
 
     for o, a in opts:
@@ -115,6 +123,16 @@ def main():
                 print("error: can't open file for writing", file=sys.stderr)
                 print(e, file=sys.stderr)
                 sys.exit(1)
+        elif o in ("-m", "--merge"):
+            try:
+                merge_threshold = float(a)
+                if merge_threshold < 0:
+                    raise ValueError
+            except ValueError:
+                print("error: invalid threshold value", file=sys.stderr)
+                sys.exit(1)
+        elif o in ("-a", "--auto-merge"):
+            auto_merge = True
         elif o in ("-g", "--debug"):
             debug = True
         elif o in ("-V", "--version"):
@@ -136,6 +154,10 @@ def main():
         with open_pdf(path_in) as doc:
             recipe = toml.load(recipe_file)
             toc = gen_toc(doc, recipe)
+            if auto_merge:
+                toc = auto_merge_toc(toc, recipe)
+            elif merge_threshold > 0:
+                toc = merge_toc(toc, merge_threshold)
             if readable:
                 print(pprint_toc(toc), file=out)
             else:
